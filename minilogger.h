@@ -1,3 +1,4 @@
+
 //Easy-to-use log classes,called minilogger
 #ifndef LOGGER_H
 #define LOGGER_H
@@ -8,7 +9,8 @@
 //  get system time 
 // ============================================================
 #include <time.h>
-
+//Windows API
+#include <windows.h>
 
 // ============================================================
 // time in 24 hours hh:mm:ss format
@@ -19,10 +21,11 @@ static std::string TimeStamp()
 
 	// get the time, and convert it to struct tm format
 	time_t a = time(0);
-	struct tm* b = localtime(&a);
+	struct tm b;
+	localtime_s(&b, &a);
 
 	// print the time to the string
-	strftime(str, 9, "%H:%M:%S", b);
+	strftime(str, 9, "%H:%M:%S", &b);
 
 	return str;
 }
@@ -36,10 +39,11 @@ static std::string DateStamp()
 
 	// get the time, and convert it to struct tm format
 	time_t a = time(0);
-	struct tm* b = localtime(&a);
+	struct tm b;
+	localtime_s(&b, &a);
 
 	// print the time to the string
-	strftime(str, 11, "%Y.%m.%d", b);
+	strftime(str, 11, "%Y.%m.%d", &b);
 
 	return str;
 }
@@ -112,7 +116,10 @@ Logger<decorator>::Logger(const std::string& p_filename,
     // stupid C++. You need to open a file in read mode, and if it doesn't
     // open correctly, you know that it doesn't exist.
 	// a file is open or not.
-	std::fstream filetester(p_filename.c_str(), std::ios::in);
+	char temppath[1024], tempfilename[1024];
+    GetTempPathA(_countof(temppath), temppath);
+    sprintf_s(tempfilename, _countof(tempfilename), "%s\\%s", temppath,p_filename.c_str());
+	std::fstream filetester(tempfilename, std::ios::in);
 
 	if (filetester.is_open())
 	{
@@ -120,12 +127,12 @@ Logger<decorator>::Logger(const std::string& p_filename,
 		filetester.close();
 
 		// open the real file and set app mode
-		m_logfile.open(p_filename.c_str(), std::ios::out | std::ios::app);
+		m_logfile.open(tempfilename, std::ios::out | std::ios::app);
 	}
 	else
 	{
 		// file doesn't exist.
-		m_logfile.open(p_filename.c_str(), std::ios::out);
+		m_logfile.open(tempfilename, std::ios::out);
 
 		// print out a file header to the file
 		m_logfile << decorator::FileHeader(p_logtitle);
